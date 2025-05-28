@@ -1,9 +1,28 @@
 export interface User {
   id: string;
   username: string;
-  role: 'admin' | 'user';
+  role: "admin" | "user";
   email: string;
-  profilePicture?: string;
+  profile_picture_url?: string;
+  created_at?: Date | string;
+  updated_at?: Date | string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  user: User;
+  message: string;
 }
 
 export interface Article {

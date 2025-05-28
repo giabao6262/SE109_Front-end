@@ -1,15 +1,23 @@
 import React, { useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { Newspaper, KeyRound, AlertCircle, Mail } from "lucide-react";
+import {
+  Newspaper,
+  UserCircle,
+  KeyRound,
+  AlertCircle,
+  Mail,
+} from "lucide-react";
 import { useAuthStore } from "../store/authStore";
 
-const LoginPage: React.FC = () => {
+const RegisterPage: React.FC = () => {
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const { login, isAuthenticated, isAdmin } = useAuthStore();
+  const { register, isAuthenticated, isAdmin } = useAuthStore();
 
   // Redirect if already logged in
   if (isAuthenticated) {
@@ -18,29 +26,50 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter both email and password");
+    // Validate inputs
+    if (!username.trim()) {
+      setError("Username is required");
       return;
     }
 
-    setIsLoggingIn(true);
+    if (!email.trim()) {
+      setError("Email is required");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Password is required");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setIsRegistering(true);
     setError("");
 
     try {
-      // Call the login function from authStore
-      const success = await login(email, password);
+      const success = await register(username, email, password);
 
       if (success) {
-        // No need to navigate as the auth state will trigger a redirect
+        // No need to navigate, the authentication state will handle the redirect
         // through the <Navigate> component at the top of this component
       } else {
-        setError("Invalid email or password");
+        setError("Username or email already exists");
       }
     } catch (err) {
-      console.error("Login error:", err);
-      setError("An error occurred during login");
+      setError("An error occurred during registration");
     } finally {
-      setIsLoggingIn(false);
+      setIsRegistering(false);
     }
   };
 
@@ -52,10 +81,10 @@ const LoginPage: React.FC = () => {
             <Newspaper className="h-12 w-12 text-[#F59E0B]" />
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Sign in to your account
+            Create an account
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Enter your email and password to sign in
+            Register to get access to all features
           </p>
         </div>
 
@@ -70,6 +99,28 @@ const LoginPage: React.FC = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
+            <div>
+              <label htmlFor="username" className="sr-only">
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <UserCircle className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
+                  required
+                  className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#F59E0B] focus:border-[#F59E0B] focus:z-10 sm:text-sm"
+                  placeholder="Username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+            </div>
+
             <div>
               <label htmlFor="email" className="sr-only">
                 Email
@@ -91,6 +142,7 @@ const LoginPage: React.FC = () => {
                 />
               </div>
             </div>
+
             <div>
               <label htmlFor="password" className="sr-only">
                 Password
@@ -103,7 +155,7 @@ const LoginPage: React.FC = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#F59E0B] focus:border-[#F59E0B] focus:z-10 sm:text-sm"
                   placeholder="Password"
@@ -112,26 +164,47 @@ const LoginPage: React.FC = () => {
                 />
               </div>
             </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="sr-only">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <KeyRound className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="appearance-none relative block w-full pl-10 pr-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#F59E0B] focus:border-[#F59E0B] focus:z-10 sm:text-sm"
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           <div>
-            {" "}
             <button
               type="submit"
-              disabled={isLoggingIn}
+              disabled={isRegistering}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#0F172A] hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#F59E0B] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoggingIn ? "Signing in..." : "Sign in"}
+              {isRegistering ? "Creating account..." : "Create account"}
             </button>
           </div>
 
-          <div className="text-sm text-center mt-4">
-            <span className="text-gray-600">Don't have an account? </span>
+          <div className="text-sm text-center">
+            <span className="text-gray-600">Already have an account? </span>
             <Link
-              to="/register"
+              to="/login"
               className="font-medium text-[#F59E0B] hover:text-[#D97706]"
             >
-              Register now
+              Sign in instead
             </Link>
           </div>
         </form>
@@ -140,4 +213,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default RegisterPage;

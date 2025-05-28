@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { Clock, Tag, ArrowLeft } from "lucide-react";
@@ -6,14 +6,35 @@ import { useArticleStore } from "../store/articleStore";
 import CommentList from "../components/articles/CommentList";
 import CommentForm from "../components/articles/CommentForm";
 import ArticleCard from "../components/articles/ArticleCard";
+import { Article } from "../types";
 
 const ArticlePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getArticleById, updateArticle, articles } = useArticleStore();
+  const { fetchArticleById, updateArticle, articles } = useArticleStore();
   const viewCountUpdated = useRef(false);
+  const [article, setArticle] = useState<Article | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const article = id ? getArticleById(id) : undefined;
+  useEffect(() => {
+    const loadArticle = async () => {
+      if (!id) return;
+
+      try {
+        setIsLoading(true);
+        const fetchedArticle = await fetchArticleById(id);
+        setArticle(fetchedArticle);
+      } catch (err) {
+        console.error("Failed to load article:", err);
+        setError("Failed to load article");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadArticle();
+  }, [id, fetchArticleById]);
 
   // Increase view count on page load, but only once
   useEffect(() => {
@@ -22,13 +43,24 @@ const ArticlePage: React.FC = () => {
       viewCountUpdated.current = true;
     }
   }, [article, updateArticle]);
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-12 text-center">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+        <p className="text-gray-600">Loading article...</p>
+      </div>
+    );
+  }
 
-  if (!article) {
+  if (error || !article) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
         <h1 className="text-2xl font-bold mb-4">Article not found</h1>
         <p className="text-gray-600 mb-6">
-          The article you're looking for doesn't exist or has been removed.
+          {error ||
+            "The article you're looking for doesn't exist or has been removed."}
         </p>
         <button
           onClick={() => navigate("/")}
@@ -74,16 +106,13 @@ const ArticlePage: React.FC = () => {
               {formatDistanceToNow(publishedDate, { addSuffix: true })}
             </span>
           </div>
-
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             {article.title}
           </h1>
-
-          <p className="text-xl text-gray-600 mb-6">{article.summary}</p>
-
+          <p className="text-xl text-gray-600 mb-6">{article.summary}</p>{" "}
           <div className="flex items-center mb-6">
             <img
-              src={article.author.profilePicture}
+              src={article.author.profile_picture_url || "/default-avatar.png"}
               alt={article.author.username}
               className="h-10 w-10 rounded-full mr-3"
             />
