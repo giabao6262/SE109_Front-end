@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { Article, Category, Comment } from "../types";
 import { articlesApi } from "../services/articlesApi";
+import { commentApi } from "../services/commentApi";
 
 interface ArticleState {
   articles: Article[];
@@ -14,10 +15,12 @@ interface ArticleState {
     totalPages: number;
     totalItems: number;
   };
-
   // CRUD operations
   fetchArticles: () => Promise<void>;
-  fetchArticleById: (id: string) => Promise<Article | undefined>;
+  fetchArticleById: (
+    id: string,
+    skipViewIncrement?: boolean
+  ) => Promise<Article | undefined>;
   getArticles: () => Article[];
   getArticleById: (id: string) => Article | undefined;
   createArticle: (
@@ -29,13 +32,15 @@ interface ArticleState {
   // Filtering
   setSelectedCategory: (categoryId: string | null) => void;
   setSearchQuery: (query: string) => void;
-  getFilteredArticles: () => Article[];
-
-  // Comments
-  addComment: (
+  getFilteredArticles: () => Article[]; // Comments
+  addComment: (articleId: string, content: string) => Promise<boolean>;
+  updateComment: (
     articleId: string,
-    comment: Omit<Comment, "id" | "likes">
-  ) => boolean;
+    commentId: string,
+    content: string
+  ) => Promise<boolean>;
+  deleteComment: (articleId: string, commentId: string) => Promise<boolean>;
+  likeComment: (articleId: string, commentId: string) => Promise<boolean>;
 
   // Categories
   getCategoryById: (id: string) => Category | undefined;
@@ -95,7 +100,7 @@ export const useArticleStore = create<ArticleState>((set, get) => ({
       set({ isLoading: false });
     }
   },
-  fetchArticleById: async (id) => {
+  fetchArticleById: async (id, skipViewIncrement = false) => {
     if (!id) {
       set({ error: "Article ID is required" });
       return undefined;
@@ -104,18 +109,37 @@ export const useArticleStore = create<ArticleState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const article = await articlesApi.getArticleById(id);
+      const article = await articlesApi.getArticleById(id, skipViewIncrement);
       if (!article) {
         set({ error: "Article not found" });
         return undefined;
       }
 
-      // Update the article in the store's articles array if it exists
-      set((state) => ({
-        articles: state.articles.map((a) =>
-          a.id === article.id ? article : a
-        ),
-      }));
+      // Fetch latest comments for the article
+      try {
+        const comments = await commentApi.getCommentsByArticleId(id);
+        article.comments = comments;
+      } catch (commentErr) {
+        console.error(`Error fetching comments for article ${id}:`, commentErr);
+        // Don't fail the whole operation if comments can't be fetched
+      } // Update the article in the store's articles array if it exists
+      // If it doesn't exist, add it to the array
+      set((state) => {
+        const articleExists = state.articles.some((a) => a.id === article.id);
+
+        if (articleExists) {
+          return {
+            articles: state.articles.map((a) =>
+              a.id === article.id ? article : a
+            ),
+          };
+        } else {
+          // Add the new article to the array
+          return {
+            articles: [...state.articles, article],
+          };
+        }
+      });
 
       return article;
     } catch (err) {
@@ -212,34 +236,113 @@ export const useArticleStore = create<ArticleState>((set, get) => ({
 
       return categoryMatch && searchMatch;
     });
-  },
+  }, // Comments
+  addComment: async (articleId, content) => {
+    try {
+      const newComment = await commentApi.createComment(articleId, content);
 
-  // Comments
-  addComment: (articleId, commentData) => {
-    const newComment: Comment = {
-      id: Math.random().toString(36).substring(2, 9),
-      likes: 0,
-      ...commentData,
-    };
+      set((state) => {
+        const updatedArticles = state.articles.map((article) => {
+          if (article.id === articleId) {
+            return {
+              ...article,
+              comments: [...article.comments, newComment],
+            };
+          }
+          return article;
+        });
 
-    let success = false;
-
-    set((state) => {
-      const updatedArticles = state.articles.map((article) => {
-        if (article.id === articleId) {
-          success = true;
-          return {
-            ...article,
-            comments: [...article.comments, newComment],
-          };
-        }
-        return article;
+        return { articles: updatedArticles };
       });
 
-      return { articles: updatedArticles };
-    });
+      return true;
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      return false;
+    }
+  },
 
-    return success;
+  updateComment: async (articleId, commentId, content) => {
+    try {
+      const updatedComment = await commentApi.updateComment(commentId, content);
+
+      set((state) => {
+        const updatedArticles = state.articles.map((article) => {
+          if (article.id === articleId) {
+            return {
+              ...article,
+              comments: article.comments.map((comment) =>
+                comment.id === commentId ? updatedComment : comment
+              ),
+            };
+          }
+          return article;
+        });
+
+        return { articles: updatedArticles };
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error updating comment:", error);
+      return false;
+    }
+  },
+
+  deleteComment: async (articleId, commentId) => {
+    try {
+      const success = await commentApi.deleteComment(commentId);
+
+      if (success) {
+        set((state) => {
+          const updatedArticles = state.articles.map((article) => {
+            if (article.id === articleId) {
+              return {
+                ...article,
+                comments: article.comments.filter(
+                  (comment) => comment.id !== commentId
+                ),
+              };
+            }
+            return article;
+          });
+
+          return { articles: updatedArticles };
+        });
+      }
+
+      return success;
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      return false;
+    }
+  },
+
+  likeComment: async (articleId, commentId) => {
+    try {
+      const updatedComment = await commentApi.likeComment(commentId);
+
+      set((state) => {
+        const updatedArticles = state.articles.map((article) => {
+          if (article.id === articleId) {
+            return {
+              ...article,
+              comments: article.comments.map((comment) =>
+                comment.id === commentId ? updatedComment : comment
+              ),
+            };
+          }
+          return article;
+        });
+
+        return { articles: updatedArticles };
+      });
+
+      return true;
+    } catch (error) {
+      console.error("Error liking comment:", error);
+      return false;
+    }
   },
 
   // Categories

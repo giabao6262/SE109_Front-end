@@ -5,12 +5,17 @@ const API_URL = "http://localhost:3000/api";
 
 // Helper function to transform backend article to frontend article format
 const transformArticle = (backendArticle: any): Article => {
+  // Ensure image URL is prefixed with the backend base URL if it's a relative path
+  const coverImageUrl = backendArticle.cover_image_url?.startsWith("http")
+    ? backendArticle.cover_image_url
+    : `http://localhost:3000${backendArticle.cover_image_url}`;
+
   return {
     id: backendArticle.id,
     title: backendArticle.title,
     content: backendArticle.content,
     summary: backendArticle.summary,
-    coverImage: backendArticle.cover_image_url,
+    coverImage: coverImageUrl,
     author: {
       id: backendArticle.author_id,
       username: backendArticle.author_name || "Unknown",
@@ -87,11 +92,15 @@ export const articlesApi = {
       throw error;
     }
   },
-
   // Get article by ID
-  getArticleById: async (id: string): Promise<Article> => {
+  getArticleById: async (
+    id: string,
+    skipViewIncrement: boolean = false
+  ): Promise<Article> => {
     try {
-      const response = await fetch(`${API_URL}/articles/${id}`, {
+      // Thêm param để không tăng view nếu cần
+      const queryParam = skipViewIncrement ? "?skipViewIncrement=true" : "";
+      const response = await fetch(`${API_URL}/articles/${id}${queryParam}`, {
         method: "GET",
         credentials: "include", // Important for cookies if authentication is required
       });

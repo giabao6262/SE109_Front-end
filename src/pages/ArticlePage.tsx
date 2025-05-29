@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Clock, Tag, ArrowLeft } from "lucide-react";
+import { Clock, Tag, ArrowLeft, MessageSquare } from "lucide-react";
 import { useArticleStore } from "../store/articleStore";
 import CommentList from "../components/articles/CommentList";
 import CommentForm from "../components/articles/CommentForm";
@@ -11,20 +11,52 @@ import { Article } from "../types";
 const ArticlePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { fetchArticleById, updateArticle, articles } = useArticleStore();
-  const viewCountUpdated = useRef(false);
+  const { fetchArticleById, articles, getArticleById } = useArticleStore();
   const [article, setArticle] = useState<Article | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const isInitialMount = useRef(true);
+  const currentArticleId = useRef<string | null>(null);
+  // Chỉ fetch bài viết một lần khi ID thay đổi
   useEffect(() => {
+    // Nếu ID giống với ID hiện tại, không làm gì cả
+    if (id === currentArticleId.current) {
+      return;
+    }
+
+    // Cập nhật ID hiện tại
+    currentArticleId.current = id || null;
+
     const loadArticle = async () => {
       if (!id) return;
 
       try {
         setIsLoading(true);
-        const fetchedArticle = await fetchArticleById(id);
-        setArticle(fetchedArticle);
+
+        // Thử lấy bài viết từ cache trước
+        const cachedArticle = getArticleById(id);
+
+        if (cachedArticle && !isInitialMount.current) {
+          // Sử dụng bài viết từ cache nếu không phải lần đầu tiên
+          // và truyền skipViewIncrement=true để không tăng view
+          setArticle(cachedArticle);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+        // Nếu không có trong cache hoặc là lần đầu tiên, gọi API
+        // Chỉ tăng view khi là lần đầu xem bài viết
+        const fetchedArticle = await fetchArticleById(
+          id,
+          !isInitialMount.current
+        );
+        if (fetchedArticle) {
+          setArticle(fetchedArticle);
+          setError(null);
+          isInitialMount.current = false;
+        } else {
+          setError("Article not found");
+        }
       } catch (err) {
         console.error("Failed to load article:", err);
         setError("Failed to load article");
@@ -34,15 +66,26 @@ const ArticlePage: React.FC = () => {
     };
 
     loadArticle();
-  }, [id, fetchArticleById]);
+  }, [id, fetchArticleById, getArticleById]);
 
-  // Increase view count on page load, but only once
+  // Cập nhật dữ liệu bài viết khi store thay đổi
   useEffect(() => {
-    if (article && !viewCountUpdated.current) {
-      updateArticle(article.id, { views: article.views + 1 });
-      viewCountUpdated.current = true;
+    if (id && articles.length > 0 && !isInitialMount.current) {
+      const currentArticle = articles.find((a) => a.id === id);
+      if (currentArticle) {
+        setArticle(currentArticle);
+        setError(null);
+      }
     }
-  }, [article, updateArticle]);
+  }, [id, articles]);
+
+  // Không tăng lượt xem ở front-end vì backend đã tự động tăng khi gọi API getArticleById
+  // useEffect(() => {
+  //   if (article && !viewCountUpdated.current) {
+  //     updateArticle(article.id, { views: article.views + 1 });
+  //     viewCountUpdated.current = true;
+  //   }
+  // }, [article, updateArticle]);
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-12 text-center">
@@ -91,7 +134,6 @@ const ArticlePage: React.FC = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to News
         </Link>
-
         {/* Article Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-2 mb-4">
@@ -122,7 +164,6 @@ const ArticlePage: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Article Cover Image */}
         <div className="mb-8">
           <img
@@ -131,13 +172,11 @@ const ArticlePage: React.FC = () => {
             className="w-full h-auto rounded-xl shadow-md"
           />
         </div>
-
         {/* Article Content */}
         <div
           className="prose max-w-none mb-8"
           dangerouslySetInnerHTML={{ __html: article.content }}
         />
-
         {/* Tags */}
         {article.tags.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 mb-8 pt-4 border-t border-gray-200">
@@ -151,11 +190,19 @@ const ArticlePage: React.FC = () => {
               </span>
             ))}
           </div>
-        )}
-
+        )}{" "}
         {/* Comments Section */}
         <div className="mt-12 space-y-8">
-          <CommentList comments={article.comments} />
+          {article.comments && article.comments.length > 0 ? (
+            <CommentList comments={article.comments} articleId={article.id} />
+          ) : (
+            <div className="bg-gray-50 p-6 rounded-lg text-center">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-gray-500">
+                No comments yet. Be the first to share your thoughts!
+              </p>
+            </div>
+          )}
           <CommentForm articleId={article.id} />
         </div>
       </div>
