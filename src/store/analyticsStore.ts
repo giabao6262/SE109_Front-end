@@ -1,52 +1,66 @@
 import { create } from 'zustand';
-import { Analytics } from '../types';
-import { useArticleStore } from './articleStore';
+import { analyticsApi } from '../services/analyticsApi';
 
-interface AnalyticsState {
+interface AnalyticsStore {
   totalVisitors: number;
-  getAnalytics: () => Analytics;
-  incrementVisitors: () => void;
+  totalArticles: number;
+  totalViews: number;
+  subscribedUsers: number;
+  articlesPerCategory: Record<string, number>;
+  topArticles: { id: string; title: string; views: number }[];
+  visitorTrends: { week_start: string; total_visitors: number }[];
+  isLoading: boolean;
+
+  fetchAnalytics: () => Promise<void>;
+  getAnalytics: () => Omit<AnalyticsStore, 'fetchAnalytics' | 'getAnalytics' | 'isLoading'>;
 }
 
-// Initial mock values
-const initialVisitors = 15738;
+export const useAnalyticsStore = create<AnalyticsStore>((set, get) => ({
+  totalVisitors: 0,
+  totalArticles: 0,
+  totalViews: 0,
+  subscribedUsers: 0,
+  articlesPerCategory: {},
+  topArticles: [],
+  visitorTrends: [],
+  isLoading: false,
 
-export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
-  totalVisitors: initialVisitors,
-  
-  getAnalytics: () => {
-    const articles = useArticleStore.getState().articles;
-    const categories = useArticleStore.getState().categories;
-    
-    // Calculate articles per category
-    const articlesPerCategory: Record<string, number> = {};
-    categories.forEach(category => {
-      articlesPerCategory[category.id] = articles.filter(
-        article => article.category.id === category.id
-      ).length;
-    });
-    
-    // Get top articles by views
-    const topArticles = [...articles]
-      .sort((a, b) => b.views - a.views)
-      .slice(0, 5)
-      .map(article => ({
-        id: article.id,
-        title: article.title,
-        views: article.views
-      }));
-    
-    return {
-      totalVisitors: get().totalVisitors,
-      totalArticles: articles.length,
-      articlesPerCategory,
-      topArticles
-    };
+  fetchAnalytics: async () => {
+    set({ isLoading: true });
+    try {
+      const [summary, categoryData, topArticles, trends] = await Promise.all([
+        analyticsApi.getSummary(),
+        analyticsApi.getArticlesByCategory(),
+        analyticsApi.getMostViewedArticles(),
+        analyticsApi.getVisitorTrends(new Date().getFullYear(), new Date().getMonth() + 1),
+      ]);
+
+      const perCategory: Record<string, number> = {};
+      for (const item of categoryData) {
+        perCategory[item.category_name] = item.count;
+      }
+
+      set({
+        totalVisitors: summary.totalVisitors,
+        totalArticles: summary.totalArticles,
+        totalViews: summary.totalViews,
+        subscribedUsers: summary.subscribedUsers,
+        articlesPerCategory: perCategory,
+        topArticles,
+        visitorTrends: trends,
+      });
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+    } finally {
+      set({ isLoading: false });
+    }
   },
-  
-  incrementVisitors: () => {
-    set(state => ({
-      totalVisitors: state.totalVisitors + 1
-    }));
+
+  getAnalytics: () => {
+    const state = get();
+    const { fetchAnalytics, getAnalytics, isLoading, ...data } = state;
+    return data;
   }
+
+  
 }));

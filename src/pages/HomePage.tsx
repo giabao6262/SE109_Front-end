@@ -3,7 +3,7 @@ import { useArticleStore } from "../store/articleStore";
 import { useAnalyticsStore } from "../store/analyticsStore";
 import ArticleGrid from "../components/articles/ArticleGrid";
 import CategoryFilter from "../components/articles/CategoryFilter";
-
+import {analyticsApi} from "../services/analyticsApi";
 const HomePage: React.FC = () => {
   const {
     articles,
@@ -15,13 +15,17 @@ const HomePage: React.FC = () => {
     isLoading,
   } = useArticleStore();
 
-  const { incrementVisitors } = useAnalyticsStore();
+  
 
   // Fetch articles and increment visitor count on page load
-  useEffect(() => {
+   useEffect(() => {
     fetchArticles();
-    incrementVisitors();
-  }, [fetchArticles, incrementVisitors]);
+
+    // Ghi nhận lượt truy cập backend
+    analyticsApi.recordVisit().catch((err) =>
+      console.error("Error recording visit:", err)
+    );
+  }, [fetchArticles]);
 
   const filteredArticles = getFilteredArticles();
   return (

@@ -15,6 +15,7 @@ interface AuthState {
   ) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateProfile: (formData: FormData) => Promise<boolean>;
 }
 
 // Helper to save user to localStorage
@@ -147,4 +148,29 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ isLoading: false });
     }
   },
+
+  updateProfile: async (formData: FormData) => {
+  try {
+    set({ isLoading: true });
+    const response = await authApi.updateProfile(formData);
+
+    if (response.success) {
+      saveUserToLocalStorage(response.data);
+      set({
+        currentUser: response.data,
+        isAuthenticated: true,
+        isAdmin: response.data.role === 'admin',
+      });
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Update profile error:", error);
+    return false;
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
 }));

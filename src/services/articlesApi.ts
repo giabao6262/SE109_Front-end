@@ -138,4 +138,113 @@ export const articlesApi = {
       throw error;
     }
   },
+
+  // Create a new article
+  createArticleWithUpload: async (
+  articleData: {
+    title: string;
+    summary: string;
+    content: string;
+    category: Category;
+    tags: string[];
+    publishedDate: string;
+  },
+  imageFile: File
+): Promise<Article> => {
+  const formData = new FormData();
+
+  formData.append('title', articleData.title);
+  formData.append('summary', articleData.summary);
+  formData.append('content', articleData.content);
+  formData.append('category_id', articleData.category.id);
+  formData.append('published_date', articleData.publishedDate);
+  formData.append('tags', articleData.tags.join(','));
+  formData.append('coverImage', imageFile);
+
+  const res = await fetch(`${API_URL}/articles`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`
+    }
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Failed to create article');
+  }
+
+  const data = await res.json();
+  return transformArticle(data.data);
+},
+
+// Update an existing article
+updateArticleWithUpload: async (
+  id: string,
+  articleData: {
+    title: string;
+    summary: string;
+    content: string;
+    category: Category;
+    tags: string[];
+    publishedDate: string;
+  },
+  imageFile: File | null
+): Promise<Article> => {
+  console.log("🔎 UpdateArticle Data:", articleData);
+console.log("✅ category_id:", articleData.category?.id);
+
+  const formData = new FormData();
+
+  formData.append('title', articleData.title);
+  formData.append('summary', articleData.summary);
+  formData.append('content', articleData.content);
+  if (!articleData.category || !articleData.category.id) {
+  throw new Error("Invalid category");
+}
+formData.append('category_id', articleData.category.id);
+
+  formData.append('published_date', articleData.publishedDate);
+  formData.append('tags', articleData.tags.join(','));
+
+  if (imageFile) {
+    formData.append('coverImage', imageFile);
+  }
+
+  const res = await fetch(`${API_URL}/articles/${id}`, {
+    method: 'PUT',
+    body: formData,
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+  });
+
+  if (!res.ok) {
+    const errData = await res.json();
+    throw new Error(errData.message || 'Failed to update article');
+  }
+
+  const data = await res.json();
+  return transformArticle(data.data);
+},
+// Delete an article by ID
+deleteArticle: async (id: string): Promise<boolean> => {
+  const res = await fetch(`${API_URL}/articles/${id}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.message || 'Failed to delete article');
+  }
+
+  return true;
+},
+
 };

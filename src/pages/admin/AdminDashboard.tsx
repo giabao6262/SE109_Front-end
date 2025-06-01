@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, TrendingUp } from 'lucide-react';
 import { useArticleStore } from '../../store/articleStore';
@@ -7,13 +7,22 @@ import AnalyticsCard from '../../components/admin/AnalyticsCard';
 import ArticleCard from '../../components/articles/ArticleCard';
 
 const AdminDashboard: React.FC = () => {
-  const { articles } = useArticleStore();
-  const { getAnalytics } = useAnalyticsStore();
-  
+  const { articles, fetchArticles, getCategoryById, categories } = useArticleStore();
+  const { fetchAnalytics, getAnalytics, isLoading } = useAnalyticsStore();
+
+  useEffect(() => {
+    fetchArticles();      // ← tải danh sách bài viết
+    fetchAnalytics();     // ← tải số liệu thống kê
+  }, []);
+
   const analytics = getAnalytics();
-  const recentArticles = [...articles].sort((a, b) => 
-    new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()
-  ).slice(0, 3);
+  if (isLoading || articles.length === 0) {
+  return <p>Loading dashboard...</p>;
+}
+
+
+  const recentArticles = [...articles].sort((a, b) => new Date(b.publishedDate).getTime() - new Date(a.publishedDate).getTime()).slice(0, 3);
+
   
   const popularArticles = [...articles].sort((a, b) => b.views - a.views).slice(0, 3);
   
@@ -45,38 +54,40 @@ const AdminDashboard: React.FC = () => {
           change={{ value: 12, isPositive: true }}
         />
         <AnalyticsCard
-          title="Total Views"
-          value={articles.reduce((sum, article) => sum + article.views, 0)}
-          icon="views"
-          change={{ value: 5, isPositive: true }}
-        />
+  title="Total Views"
+  value={analytics.totalViews} // ✅ Dữ liệu backend
+  icon="views"
+  change={{ value: 5, isPositive: true }}
+/>
+
       </div>
       
       {/* Category Distribution */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">Articles by Category</h2>
         <div className="space-y-4">
-          {Object.entries(analytics.articlesPerCategory).map(([categoryId, count]) => {
-            const category = useArticleStore.getState().getCategoryById(categoryId);
-            if (!category) return null;
-            
-            const percentage = (count / analytics.totalArticles) * 100;
-            
-            return (
-              <div key={categoryId}>
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-sm font-medium">{category.name}</span>
-                  <span className="text-sm text-gray-500">{count} articles</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div 
-                    className="bg-[#F59E0B] h-2.5 rounded-full" 
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            );
-          })}
+          {Object.entries(analytics.articlesPerCategory).map(([categoryName, count]) => {
+  const category = categories.find(c => c.name === categoryName); // fallback nếu id bị mismatch
+  if (!category) return null;
+
+  const percentage = (count / Math.max(analytics.totalArticles, 1)) * 100;
+
+  return (
+    <div key={categoryName}>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-medium">{category.name}</span>
+        <span className="text-sm text-gray-500">{count} articles</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div
+          className="bg-[#F59E0B] h-2.5 rounded-full"
+          style={{ width: `${percentage}%` }}
+        ></div>
+      </div>
+    </div>
+  );
+})}
+
         </div>
       </div>
       

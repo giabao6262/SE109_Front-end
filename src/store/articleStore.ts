@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { Article, Category, Comment } from "../types";
 import { articlesApi } from "../services/articlesApi";
 import { commentApi } from "../services/commentApi";
+import { id } from "date-fns/locale";
 
 interface ArticleState {
   articles: Article[];
@@ -24,13 +25,33 @@ interface ArticleState {
   getArticles: () => Article[];
   getArticleById: (id: string) => Article | undefined;
   createArticle: (
-    article: Omit<Article, "id" | "comments" | "views">
-  ) => Article;
-  updateArticle: (id: string, updates: Partial<Article>) => Article | undefined;
-  deleteArticle: (id: string) => boolean;
+    formData: {
+      title: string;
+      summary: string;
+      content: string;
+      category: Category;
+      tags: string[];
+      publishedDate: string;
+    },
+    imageFile: File
+  ) => Promise<Article>;
+  updateArticle: (
+    id: string,
+    formData: {
+      title: string;
+      summary: string;
+      content: string;
+      category: Category;
+      tags: string[];
+      publishedDate: string;
+    },
+    imageFile: File | null
+  ) => Promise<Article>;
+  deleteArticle: (id: string) => Promise<boolean>;
 
   // Filtering
   setSelectedCategory: (categoryId: string | null) => void;
+
   setSearchQuery: (query: string) => void;
   getFilteredArticles: () => Article[]; // Comments
   addComment: (articleId: string, content: string) => Promise<boolean>;
@@ -159,61 +180,69 @@ export const useArticleStore = create<ArticleState>((set, get) => ({
     return get().articles.find((article) => article.id === id);
   },
 
-  createArticle: (articleData) => {
-    const newArticle: Article = {
-      id: Math.random().toString(36).substring(2, 9),
-      comments: [],
-      views: 0,
-      ...articleData,
-    };
+  createArticle: async(
+    formData: {
+    title: string;
+    summary: string;
+    content: string;
+    category: Category;
+    tags: string[];
+    publishedDate: string;
+  },
+  imageFile: File
+): Promise<Article> => {
+  const newArticle = await articlesApi.createArticleWithUpload(formData, imageFile);
 
-    set((state) => ({
-      articles: [...state.articles, newArticle],
-    }));
+  set((state) => ({
+    articles: [newArticle, ...state.articles]
+  }));
 
-    return newArticle;
+  return newArticle;
   },
 
-  updateArticle: (id, updates) => {
-    let updatedArticle: Article | undefined;
+  updateArticle: async (
+    id: string,
+    formData:{
+      title: string;
+    summary: string;
+    content: string;
+    category: Category;
+    tags: string[];
+    publishedDate: string;
+    },
+    imageFile: File | null
+  ):Promise<Article> => {
+    const updated = await articlesApi.updateArticleWithUpload(id, formData, imageFile);
 
-    set((state) => {
-      const updatedArticles = state.articles.map((article) => {
-        if (article.id === id) {
-          updatedArticle = { ...article, ...updates };
-          return updatedArticle;
-        }
-        return article;
-      });
+  set((state) => ({
+    articles: state.articles.map((a) => (a.id === id ? updated : a))
+  }));
 
-      return { articles: updatedArticles };
-    });
+  return updated;
 
-    return updatedArticle;
   },
 
-  deleteArticle: (id) => {
-    let deleted = false;
+  deleteArticle: async (id: string): Promise<boolean> => {
+  try {
+    const success = await articlesApi.deleteArticle(id);
+    if (success) {
+      set((state) => ({
+        articles: state.articles.filter((a) => a.id !== id),
+      }));
+    }
+    return success;
+  } catch (err) {
+    console.error('Failed to delete article:', err);
+    return false;
+  }
+},
 
-    set((state) => {
-      const filteredArticles = state.articles.filter((article) => {
-        if (article.id === id) {
-          deleted = true;
-          return false;
-        }
-        return true;
-      });
-
-      return { articles: filteredArticles };
-    });
-
-    return deleted;
-  },
 
   // Filtering
   setSelectedCategory: (categoryId) => {
     set({ selectedCategory: categoryId });
   },
+
 
   setSearchQuery: (query) => {
     set({ searchQuery: query });

@@ -3,15 +3,17 @@ import { Article, Category } from '../../types';
 import { useArticleStore } from '../../store/articleStore';
 import { useAuthStore } from '../../store/authStore';
 import { X } from 'lucide-react';
+import { ar } from 'date-fns/locale';
 
 interface ArticleFormProps {
   article?: Article;
-  onSubmit: (formData: any) => void;
+  onSubmit: (formData: any, imageFile: File | null) => void | Promise<void>; // Thêm imageFile
   onCancel: () => void;
 }
 
+
 const ArticleForm: React.FC<ArticleFormProps> = ({ article, onSubmit, onCancel }) => {
-  const { categories } = useArticleStore();
+  const { categories, fetchArticles } = useArticleStore();
   const { currentUser } = useAuthStore();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -105,20 +107,40 @@ const ArticleForm: React.FC<ArticleFormProps> = ({ article, onSubmit, onCancel }
       coverImage: coverImageUrl,
       category: selectedCategory,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-      author: currentUser,
+      author_id: currentUser.id,
       publishedDate: article?.publishedDate || new Date().toISOString(),
       updatedDate: article ? new Date().toISOString() : undefined
     };
-    
-    onSubmit(articleData);
+
+    onSubmit(articleData, imageFile);
   };
-  
+
+  useEffect(() => {
+    if (article) {
+      setFormData({
+        title: article.title,
+        summary: article.summary,
+        content: article.content,
+        categoryId: article.category.id,
+        tags: article.tags.join(', '),
+        coverImage: article.coverImage || ''
+      });
+      setPreviewImage(article.coverImage || null);
+    }
+  }, [article]);
+
   useEffect(() => {
     // Set preview image if article has an existing cover image
     if (article?.coverImage) {
       setPreviewImage(article.coverImage);
     }
   }, [article]);
+
+  useEffect(() => {
+  if (categories.length === 0) {
+    fetchArticles(); // tự động lấy categories nếu chưa có // tự động lấy categories nếu chưa có
+  }
+}, []);
   
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

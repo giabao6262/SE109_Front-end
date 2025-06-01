@@ -7,9 +7,16 @@ const AdminArticleNew: React.FC = () => {
   const { createArticle } = useArticleStore();
   const navigate = useNavigate();
   
-  const handleSubmit = (formData: any) => {
-    createArticle(formData);
-    navigate('/admin/articles');
+  const handleSubmit = async (formData: any, imageFile: File | null) => {
+    try {
+      if(!imageFile) throw new Error("Image file is required");
+      await createArticle(formData, imageFile);
+      navigate('/admin/articles');
+    } catch (error) {
+      console.error("Error creating article:", error);
+      alert("Failed to create article. Please try again.");
+      // Optionally show an error message to the user
+    }
   };
   
   const handleCancel = () => {

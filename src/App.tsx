@@ -12,7 +12,7 @@ import RegisterPage from "./pages/RegisterPage";
 import SearchPage from "./pages/SearchPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import CategoryPage from "./pages/CategoryPage";
-
+import UpdateProfile from "./pages/UpdateProfile";
 // Auth Components
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import { AuthProvider } from "./components/auth/AuthProvider";
@@ -41,7 +41,7 @@ function App() {
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-
+          <Route path="/update-profile" element={<UpdateProfile />} />
           {/* Admin Routes */}
           <Route element={<ProtectedRoute requireAdmin={true} />}>
             <Route path="/admin" element={<AdminLayout />}>

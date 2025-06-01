@@ -91,4 +91,21 @@ export const authApi = {
       throw error;
     }
   },
+
+  //update user profile
+  updateProfile: async (formData: FormData): Promise<{ success: boolean; data: User }> => {
+  const res = await fetch(`${API_URL}/auth/profile`, {
+    method: 'PUT',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to update profile');
+  }
+
+  return await res.json();
+},
+
 };

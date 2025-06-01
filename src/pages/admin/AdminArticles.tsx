@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import { useArticleStore } from '../../store/articleStore';
@@ -6,12 +6,16 @@ import ArticleList from '../../components/admin/ArticleList';
 import { Article } from '../../types';
 
 const AdminArticles: React.FC = () => {
-  const { articles, deleteArticle } = useArticleStore();
+  const { articles, deleteArticle, fetchArticles } = useArticleStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; articleId: string | null }>({
     show: false,
     articleId: null
   });
+
+  useEffect(() => {
+     fetchArticles();
+  }, []);
   
   // Filter articles based on search term
   const filteredArticles = articles.filter(article => 
@@ -24,12 +28,14 @@ const AdminArticles: React.FC = () => {
     setConfirmDelete({ show: true, articleId });
   };
   
-  const handleConfirmDelete = () => {
-    if (confirmDelete.articleId) {
-      deleteArticle(confirmDelete.articleId);
-    }
-    setConfirmDelete({ show: false, articleId: null });
-  };
+  const handleConfirmDelete = async () => {
+  if (confirmDelete.articleId) {
+    const success = await deleteArticle(confirmDelete.articleId);
+    if (!success) alert('Failed to delete article');
+  }
+  setConfirmDelete({ show: false, articleId: null });
+};
+
   
   const handleCancelDelete = () => {
     setConfirmDelete({ show: false, articleId: null });

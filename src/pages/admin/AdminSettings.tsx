@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, User, Mail, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { Upload } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
   const { currentUser } = useAuthStore();
@@ -12,7 +13,10 @@ const AdminSettings: React.FC = () => {
     newPassword: '',
     confirmPassword: ''
   });
-  
+  const [imageFile, setImageFile] = useState<File | null>(null);
+const [previewImage, setPreviewImage] = useState<string | null>(currentUser?.profile_picture_url || null);
+const { updateProfile } = useAuthStore(); // <-- Thêm vào đây
+
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   
@@ -24,50 +28,48 @@ const AdminSettings: React.FC = () => {
     });
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Reset messages
-    setSuccessMessage('');
-    setErrorMessage('');
-    
-    // Password validation
-    if (formData.newPassword) {
-      if (formData.currentPassword === '') {
-        setErrorMessage('Current password is required to set a new password');
-        return;
-      }
-      
-      if (formData.newPassword !== formData.confirmPassword) {
-        setErrorMessage('New password and confirmation do not match');
-        return;
-      }
-      
-      if (formData.newPassword.length < 6) {
-        setErrorMessage('New password must be at least 6 characters long');
-        return;
-      }
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setErrorMessage('Please enter a valid email address');
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setSuccessMessage('');
+  setErrorMessage('');
+
+  // Validation
+  if (formData.newPassword) {
+    if (!formData.currentPassword) {
+      setErrorMessage('Current password is required to set a new password');
       return;
     }
-    
-    // In a real app, we would update the user info here
-    // For this demo, we'll just show a success message
-    setSuccessMessage('Settings updated successfully');
-    
-    // Clear passwords
-    setFormData({
-      ...formData,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-  };
+    if (formData.newPassword !== formData.confirmPassword) {
+      setErrorMessage('New password and confirmation do not match');
+      return;
+    }
+    if (formData.newPassword.length < 6) {
+      setErrorMessage('New password must be at least 6 characters');
+      return;
+    }
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(formData.email)) {
+    setErrorMessage('Please enter a valid email address');
+    return;
+  }
+
+  // Prepare FormData
+  const data = new FormData();
+  data.append('username', formData.username);
+  data.append('email', formData.email);
+  if (formData.newPassword) data.append('password', formData.newPassword);
+  if (imageFile) data.append('profilePicture', imageFile);
+
+  const success = await updateProfile(data);
+  if (success) {
+    setSuccessMessage('Profile updated successfully');
+    setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
+  } else {
+    setErrorMessage('Failed to update profile');
+  }
+};
   
   return (
     <div>
@@ -102,6 +104,38 @@ const AdminSettings: React.FC = () => {
       )}
       
       <div className="bg-white rounded-lg shadow p-6">
+        <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Profile Picture
+  </label>
+  <div className="flex items-center space-x-4">
+    {previewImage ? (
+      <img src={previewImage} alt="Preview" className="w-16 h-16 rounded-full object-cover border" />
+    ) : (
+      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+        <User className="text-gray-500" />
+      </div>
+    )}
+    <label className="cursor-pointer inline-flex items-center text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded border border-gray-300">
+      <Upload className="h-4 w-4 mr-1" />
+      Upload
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            setImageFile(file);
+            setPreviewImage(URL.createObjectURL(file));
+          }
+        }}
+      />
+    </label>
+  </div>
+</div>
+
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
