@@ -27,10 +27,10 @@ export const commentApi = {
           username: comment.author_name || "Unknown",
           role: comment.author_role || "user",
           email: "", // Email is typically not exposed in comment data
-          profile_picture_url: comment.author_profile_picture
-            ? comment.author_profile_picture.startsWith("http")
-              ? comment.author_profile_picture
-              : `http://localhost:3000${comment.author_profile_picture}`
+          profile_picture_url: comment.author_profile_picture_url
+            ? comment.author_profile_picture_url.startsWith("http")
+              ? comment.author_profile_picture_url
+              : `http://localhost:3000${comment.author_profile_picture_url}`
             : "/default-avatar.png",
         },
         date: comment.created_at,
@@ -41,7 +41,6 @@ export const commentApi = {
       throw error;
     }
   },
-
   // Create a new comment
   createComment: async (
     articleId: string,
@@ -75,7 +74,7 @@ export const commentApi = {
           role: data.data.author_role || "user",
           email: "",
           profile_picture_url:
-            data.data.author_profile_picture || "/default-avatar.png",
+            data.data.author_profile_picture_url || "/default-avatar.png",
         },
         date: data.data.created_at,
         likes: data.data.likes || 0,
@@ -85,7 +84,6 @@ export const commentApi = {
       throw error;
     }
   },
-
   // Update a comment
   updateComment: async (
     commentId: string,
@@ -107,7 +105,6 @@ export const commentApi = {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to update comment");
       }
-
       const data = await response.json();
       return {
         id: data.data.id,
@@ -117,8 +114,11 @@ export const commentApi = {
           username: data.data.author_name || "Unknown",
           role: data.data.author_role || "user",
           email: "",
-          profile_picture_url:
-            data.data.author_profile_picture || "/default-avatar.png",
+          profile_picture_url: data.data.author_profile_picture_url
+            ? data.data.author_profile_picture_url.startsWith("http")
+              ? data.data.author_profile_picture_url
+              : `http://localhost:3000${data.data.author_profile_picture_url}`
+            : "/default-avatar.png",
         },
         date: data.data.updated_at || data.data.created_at,
         likes: data.data.likes || 0,
@@ -149,7 +149,6 @@ export const commentApi = {
       throw error;
     }
   },
-
   // Like a comment
   likeComment: async (commentId: string): Promise<Comment> => {
     try {
@@ -172,8 +171,11 @@ export const commentApi = {
           username: data.data.author_name || "Unknown",
           role: data.data.author_role || "user",
           email: "",
-          profile_picture_url:
-            data.data.author_profile_picture || "/default-avatar.png",
+          profile_picture_url: data.data.author_profile_picture_url
+            ? data.data.author_profile_picture_url.startsWith("http")
+              ? data.data.author_profile_picture_url
+              : `http://localhost:3000${data.data.author_profile_picture_url}`
+            : "/default-avatar.png",
         },
         date: data.data.created_at,
         likes: data.data.likes || 0,

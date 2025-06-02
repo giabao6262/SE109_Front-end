@@ -159,7 +159,11 @@ const CommentList: React.FC<CommentListProps> = ({ comments, articleId }) => {
               {" "}
               <img
                 src={
-                  comment.author.profile_picture_url || "/default-avatar.png"
+                  comment.author.profile_picture_url
+                    ? comment.author.profile_picture_url.startsWith("http")
+                      ? comment.author.profile_picture_url
+                      : `http://localhost:3000${comment.author.profile_picture_url}`
+                    : "/default-avatar.png"
                 }
                 alt={comment.author.username}
                 className="w-10 h-10 rounded-full"

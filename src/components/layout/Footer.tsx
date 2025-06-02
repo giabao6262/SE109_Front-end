@@ -1,26 +1,48 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Newspaper, Mail, Instagram, Twitter, Facebook, Youtube } from 'lucide-react';
-import { useSubscriptionStore } from '../../store/subscriptionStore';
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import {
+  Newspaper,
+  Instagram,
+  Twitter,
+  Facebook,
+  Youtube,
+  Bell,
+} from "lucide-react";
+import { useSubscriptionStore } from "../../store/subscriptionStore";
+import { useAuthStore } from "../../store/authStore";
 
 const Footer: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [subscribeMessage, setSubscribeMessage] = useState('');
-  const [messageType, setMessageType] = useState<'success' | 'error' | null>(null);
-  const { subscribe } = useSubscriptionStore();
+  const [subscribeMessage, setSubscribeMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | null>(
+    null
+  );
+  const { subscribe, isSubscribed, checkSubscriptionStatus } =
+    useSubscriptionStore();
+  const { isAuthenticated } = useAuthStore();
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isAuthenticated) {
+      checkSubscriptionStatus();
+    }
+  }, [isAuthenticated, checkSubscriptionStatus]);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const result = subscribe(email);
+
+    if (!isAuthenticated) {
+      setSubscribeMessage("Please log in to subscribe to our newsletter");
+      setMessageType("error");
+      return;
+    }
+
+    const result = await subscribe();
     setSubscribeMessage(result.message);
-    setMessageType(result.success ? 'success' : 'error');
-    
+    setMessageType(result.success ? "success" : "error");
+
     if (result.success) {
-      setEmail('');
       // Clear message after 5 seconds
       setTimeout(() => {
-        setSubscribeMessage('');
+        setSubscribeMessage("");
         setMessageType(null);
       }, 5000);
     }
@@ -37,7 +59,8 @@ const Footer: React.FC = () => {
               <span className="text-xl font-bold text-white">FootballNews</span>
             </Link>
             <p className="text-sm mb-4">
-              Your premier source for the latest football news, analysis, and updates from around the world.
+              Your premier source for the latest football news, analysis, and
+              updates from around the world.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="hover:text-[#F59E0B] transition-colors">
@@ -60,16 +83,33 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="hover:text-[#F59E0B] transition-colors">Home</Link>
+                <Link to="/" className="hover:text-[#F59E0B] transition-colors">
+                  Home
+                </Link>
               </li>
               <li>
-                <Link to="/categories" className="hover:text-[#F59E0B] transition-colors">Categories</Link>
+                <Link
+                  to="/categories"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  Categories
+                </Link>
               </li>
               <li>
-                <Link to="/about" className="hover:text-[#F59E0B] transition-colors">About Us</Link>
+                <Link
+                  to="/about"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  About Us
+                </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-[#F59E0B] transition-colors">Contact</Link>
+                <Link
+                  to="/contact"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  Contact
+                </Link>
               </li>
             </ul>
           </div>
@@ -79,60 +119,101 @@ const Footer: React.FC = () => {
             <h3 className="text-white font-semibold mb-4">Categories</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/categories/premier-league" className="hover:text-[#F59E0B] transition-colors">Premier League</Link>
+                <Link
+                  to="/categories/premier-league"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  Premier League
+                </Link>
               </li>
               <li>
-                <Link to="/categories/la-liga" className="hover:text-[#F59E0B] transition-colors">La Liga</Link>
+                <Link
+                  to="/categories/la-liga"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  La Liga
+                </Link>
               </li>
               <li>
-                <Link to="/categories/champions-league" className="hover:text-[#F59E0B] transition-colors">Champions League</Link>
+                <Link
+                  to="/categories/champions-league"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  Champions League
+                </Link>
               </li>
               <li>
-                <Link to="/categories/world-cup" className="hover:text-[#F59E0B] transition-colors">World Cup</Link>
+                <Link
+                  to="/categories/world-cup"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  World Cup
+                </Link>
               </li>
               <li>
-                <Link to="/categories/transfers" className="hover:text-[#F59E0B] transition-colors">Transfers</Link>
+                <Link
+                  to="/categories/transfers"
+                  className="hover:text-[#F59E0B] transition-colors"
+                >
+                  Transfers
+                </Link>
               </li>
             </ul>
           </div>
 
           {/* Newsletter */}
           <div className="col-span-1">
-            <h3 className="text-white font-semibold mb-4">Subscribe to Newsletter</h3>
+            <h3 className="text-white font-semibold mb-4">
+              Subscribe to Newsletter
+            </h3>
             <p className="text-sm mb-4">
-              Stay updated with the latest football news delivered directly to your inbox.
-            </p>
+              Stay updated with the latest football news delivered directly to
+              your inbox.
+            </p>{" "}
             <form onSubmit={handleSubscribe}>
               <div className="flex flex-col space-y-2">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <input
-                    type="email"
-                    placeholder="Your email address"
-                    className="w-full px-10 py-2 bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-[#F59E0B]"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="bg-[#F59E0B] text-white py-2 px-4 rounded-md hover:bg-[#D97706] transition-colors"
-                >
-                  Subscribe
-                </button>
+                {isAuthenticated && !isSubscribed ? (
+                  <button
+                    type="submit"
+                    className="bg-[#F59E0B] text-white py-2 px-4 rounded-md hover:bg-[#D97706] transition-colors flex items-center justify-center"
+                  >
+                    <Bell className="h-4 w-4 mr-2" />
+                    Subscribe to Newsletter
+                  </button>
+                ) : isAuthenticated && isSubscribed ? (
+                  <p className="text-green-400 text-sm flex items-center">
+                    <Bell className="h-4 w-4 mr-2" />
+                    You are currently subscribed to our newsletter!
+                  </p>
+                ) : (
+                  <p className="text-sm">
+                    <Link
+                      to="/login"
+                      className="text-[#F59E0B] hover:underline"
+                    >
+                      Log in
+                    </Link>{" "}
+                    to subscribe to our newsletter
+                  </p>
+                )}
               </div>
             </form>
             {subscribeMessage && (
-              <p className={`mt-2 text-sm ${messageType === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+              <p
+                className={`mt-2 text-sm ${
+                  messageType === "success" ? "text-green-400" : "text-red-400"
+                }`}
+              >
                 {subscribeMessage}
               </p>
             )}
           </div>
         </div>
-        
+
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} FootballNews. All rights reserved.</p>
+          <p>
+            &copy; {new Date().getFullYear()} FootballNews. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

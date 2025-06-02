@@ -41,9 +41,15 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             </h2>
             <p className="text-gray-300 mb-4 line-clamp-2">{article.summary}</p>
             <div className="flex items-center space-x-4">
+              {" "}
               <div className="flex items-center">
+                {" "}
                 <img
-                  src={article.author.profile_picture_url}
+                  src={
+                    article.author.profile_picture_url
+                      ? `http://localhost:3000${article.author.profile_picture_url}`
+                      : "/default-avatar.png"
+                  }
                   alt={article.author.username}
                   className="h-8 w-8 rounded-full mr-2"
                 />
@@ -122,9 +128,15 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             {article.summary}
           </p>
           <div className="flex items-center justify-between mt-auto pt-3 border-t border-gray-100">
+            {" "}
             <div className="flex items-center">
+              {" "}
               <img
-                src={article.author.profile_picture_url}
+                src={
+                  article.author.profile_picture_url
+                    ? `http://localhost:3000${article.author.profile_picture_url}`
+                    : "/default-avatar.png"
+                }
                 alt={article.author.username}
                 className="h-6 w-6 rounded-full mr-2"
               />

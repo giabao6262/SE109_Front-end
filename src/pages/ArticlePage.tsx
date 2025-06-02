@@ -153,8 +153,13 @@ const ArticlePage: React.FC = () => {
           </h1>
           <p className="text-xl text-gray-600 mb-6">{article.summary}</p>{" "}
           <div className="flex items-center mb-6">
+            {" "}
             <img
-              src={article.author.profile_picture_url || "/default-avatar.png"}
+              src={
+                article.author.profile_picture_url
+                  ? `http://localhost:3000${article.author.profile_picture_url}`
+                  : "/default-avatar.png"
+              }
               alt={article.author.username}
               className="h-10 w-10 rounded-full mr-3"
             />

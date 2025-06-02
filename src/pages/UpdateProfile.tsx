@@ -1,27 +1,44 @@
-import React, { Profiler, useState } from 'react';
-import { useAuthStore } from '../store/authStore';
-import { AlertCircle, Save, Upload, User, Mail, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAuthStore } from "../store/authStore";
+import { useSubscriptionStore } from "../store/subscriptionStore";
+import {
+  AlertCircle,
+  Save,
+  Upload,
+  User,
+  Mail,
+  ArrowLeft,
+  Bell,
+  BellOff,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const UpdateProfile: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser, updateProfile } = useAuthStore();
+  const { isSubscribed, checkSubscriptionStatus, subscribe, unsubscribe } =
+    useSubscriptionStore();
 
   const [formData, setFormData] = useState({
-    username: currentUser?.username || '',
-    email: currentUser?.email || '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-    Profile_Picture: currentUser?.profile_picture_url || '',
-    
+    username: currentUser?.username || "",
+    email: currentUser?.email || "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    Profile_Picture: currentUser?.profile_picture_url || "",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(currentUser?.profile_picture_url || null);
+  const [previewImage, setPreviewImage] = useState<string | null>(
+    currentUser?.profile_picture_url || null
+  );
 
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  useEffect(() => {
+    // Check subscription status when component mounts
+    checkSubscriptionStatus();
+  }, [checkSubscriptionStatus]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,43 +55,48 @@ const UpdateProfile: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
+    setErrorMessage("");
+    setSuccessMessage("");
 
     // Validate
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      setErrorMessage('Please enter a valid email address.');
+      setErrorMessage("Please enter a valid email address.");
       return;
     }
 
     if (formData.newPassword) {
       if (!formData.currentPassword) {
-        setErrorMessage('Current password is required to set a new password.');
+        setErrorMessage("Current password is required to set a new password.");
         return;
       }
       if (formData.newPassword !== formData.confirmPassword) {
-        setErrorMessage('Passwords do not match.');
+        setErrorMessage("Passwords do not match.");
         return;
       }
       if (formData.newPassword.length < 6) {
-        setErrorMessage('Password must be at least 6 characters.');
+        setErrorMessage("Password must be at least 6 characters.");
         return;
       }
     }
 
     const data = new FormData();
-    data.append('username', formData.username);
-    data.append('email', formData.email);
-    if (formData.newPassword) data.append('password', formData.newPassword);
-    if (imageFile) data.append('profilePicture', imageFile);
+    data.append("username", formData.username);
+    data.append("email", formData.email);
+    if (formData.newPassword) data.append("password", formData.newPassword);
+    if (imageFile) data.append("profilePicture", imageFile);
 
     const success = await updateProfile(data);
     if (success) {
-      setSuccessMessage('Profile updated successfully.');
-      setFormData({ ...formData, currentPassword: '', newPassword: '', confirmPassword: '' });
+      setSuccessMessage("Profile updated successfully.");
+      setFormData({
+        ...formData,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
     } else {
-      setErrorMessage('Failed to update profile.');
+      setErrorMessage("Failed to update profile.");
     }
   };
 
@@ -83,7 +105,7 @@ const UpdateProfile: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Update Profile</h2>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate("/")}
           className="flex items-center text-sm text-blue-600 hover:underline"
         >
           <ArrowLeft className="w-4 h-4 mr-1" /> Back to Home
@@ -106,7 +128,11 @@ const UpdateProfile: React.FC = () => {
         {/* Avatar */}
         <div className="flex items-center space-x-4">
           {previewImage ? (
-            <img src={previewImage} alt="Avatar" className="w-16 h-16 rounded-full object-cover border" />
+            <img
+              src={`http://localhost:3000${currentUser?.profile_picture_url}`}
+              alt="Avatar"
+              className="w-16 h-16 rounded-full object-cover border"
+            />
           ) : (
             <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
               <User className="text-gray-500" />
@@ -123,10 +149,14 @@ const UpdateProfile: React.FC = () => {
             />
           </label>
         </div>
-
         {/* Username */}
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <label
+            htmlFor="username"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Username
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <User className="h-5 w-5 text-gray-400" />
@@ -142,10 +172,14 @@ const UpdateProfile: React.FC = () => {
             />
           </div>
         </div>
-
         {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Email
+          </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Mail className="h-5 w-5 text-gray-400" />
@@ -161,7 +195,6 @@ const UpdateProfile: React.FC = () => {
             />
           </div>
         </div>
-
         {/* Password Section */}
         <div className="pt-6 border-t border-gray-200">
           <h3 className="text-lg font-medium mb-4">Change Password</h3>
@@ -191,8 +224,69 @@ const UpdateProfile: React.FC = () => {
               onChange={handleChange}
             />
           </div>
-        </div>
+        </div>{" "}
+        {/* Subscription Section */}
+        <div className="pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-medium mb-4">Subscription</h3>
 
+          {isSubscribed ? (
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <Bell className="h-5 w-5 text-green-500 mr-2" />
+                <span className="text-green-600 font-medium">
+                  You are currently subscribed to our newsletter.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const result = await unsubscribe();
+                  if (result.success) {
+                    setSuccessMessage(
+                      "Successfully unsubscribed from newsletter."
+                    );
+                  } else {
+                    setErrorMessage("Failed to unsubscribe. Please try again.");
+                  }
+                }}
+                className="inline-flex items-center text-red-600 hover:text-red-800"
+              >
+                <BellOff className="h-4 w-4 mr-1" />
+                Unsubscribe
+              </button>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <div className="flex items-center mb-2">
+                <BellOff className="h-5 w-5 text-gray-400 mr-2" />
+                <span className="text-gray-600">
+                  You are not subscribed to our newsletter.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const result = await subscribe();
+                  if (result.success) {
+                    setSuccessMessage("Successfully subscribed to newsletter!");
+                  } else {
+                    setErrorMessage("Failed to subscribe. Please try again.");
+                  }
+                }}
+                className="inline-flex items-center text-blue-600 hover:text-blue-800"
+              >
+                <Bell className="h-4 w-4 mr-1" />
+                Subscribe to newsletter
+              </button>
+            </div>
+          )}
+
+          <p className="text-sm text-gray-500">
+            {isSubscribed
+              ? "You will receive email notifications about new articles and updates."
+              : "Subscribe to receive email notifications about new articles and updates."}
+          </p>
+        </div>
         <div className="flex justify-end">
           <button
             type="submit"

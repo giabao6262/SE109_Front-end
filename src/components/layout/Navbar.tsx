@@ -92,14 +92,14 @@ const Navbar: React.FC = () => {
                 )}{" "}
                 <div className="flex items-center space-x-2 group relative">
                   {currentUser?.profile_picture_url ? (
-  <img
-    src={`http://localhost:3000${currentUser?.profile_picture_url}`}
-    alt={currentUser.username}
-    className="h-8 w-8 rounded-full object-cover"
-  />
-) : (
-  <UserCircle className="h-8 w-8" />
-)}
+                    <img
+                      src={`http://localhost:3000${currentUser?.profile_picture_url}`}
+                      alt={currentUser.username}
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <UserCircle className="h-8 w-8" />
+                  )}
 
                   <span>{currentUser?.username}</span>
 
@@ -114,13 +114,12 @@ const Navbar: React.FC = () => {
                         Logout
                       </button>
                       <Link
-  to={isAdmin ? "/admin/settings" : "/update-profile"}
-  className="flex items-center w-full px-4 py-2 text-left hover:bg-gray-700"
->
-  <User className="h-4 w-4 mr-2" />
-  Update Profile
-</Link>
-
+                        to={isAdmin ? "/admin/settings" : "/update-profile"}
+                        className="flex items-center w-full px-4 py-2 text-left hover:bg-gray-700"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Update Profile
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -198,9 +197,10 @@ const Navbar: React.FC = () => {
                   </Link>
                 )}{" "}
                 <div className="flex items-center space-x-2">
+                  {" "}
                   {currentUser?.profile_picture_url ? (
                     <img
-                      src={currentUser.profile_picture_url}
+                      src={`http://localhost:3000${currentUser.profile_picture_url}`}
                       alt={currentUser.username}
                       className="h-8 w-8 rounded-full object-cover"
                     />
