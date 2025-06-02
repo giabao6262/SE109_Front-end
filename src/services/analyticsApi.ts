@@ -1,6 +1,10 @@
 import { Analytics } from "../types";
+import Cookies from "js-cookie";
 
 const API = 'http://localhost:3000/api/analytics';
+const VISIT_COOKIE_NAME = 'last_visit';
+
+
 
 export const analyticsApi = {
   getSummary: async () => {
@@ -32,6 +36,13 @@ export const analyticsApi = {
   },
 
   recordVisit: async () => {
+    const lastVisit = Cookies.get(VISIT_COOKIE_NAME);
+
+    if (lastVisit) {
+      console.log('Visit already recorded within timeframe');
+      return;
+    }
+
     const res = await fetch(`${API}/record-visit`, {
       method: 'POST',
       credentials: 'include',
@@ -45,5 +56,7 @@ export const analyticsApi = {
       const error = await res.json();
       throw new Error(error.message || 'Failed to record visit');
     }
+
+    Cookies.set(VISIT_COOKIE_NAME, 'true', { expires: 23 / 24 }); 
   },
 };

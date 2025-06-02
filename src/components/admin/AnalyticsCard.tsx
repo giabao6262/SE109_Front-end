@@ -52,18 +52,7 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({ title, value, icon, chang
         </div>
       </div>
       
-      {change && (
-        <div className="mt-2">
-          <div className={`flex items-center text-sm ${change.isPositive ? 'text-green-600' : 'text-red-600'}`}>
-            {change.isPositive ? (
-              <TrendingUp className="h-4 w-4 mr-1" />
-            ) : (
-              <TrendingUp className="h-4 w-4 mr-1 transform rotate-180" />
-            )}
-            <span>{change.isPositive ? '+' : '-'}{change.value}% from last month</span>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };

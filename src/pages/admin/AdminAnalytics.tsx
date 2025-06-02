@@ -81,11 +81,10 @@ const AdminAnalytics: React.FC = () => {
                   <div
                     className="h-2.5 rounded-full"
                     style={{
-                      width: `${
-                        (item.value /
+                      width: `${(item.value /
                           Math.max(...categoryData.map((c) => c.value), 1)) *
                         100
-                      }%`,
+                        }%`,
                       backgroundColor: COLORS[index % COLORS.length],
                     }}
                   ></div>
@@ -109,11 +108,10 @@ const AdminAnalytics: React.FC = () => {
                   <div
                     className="bg-[#F59E0B] h-2.5 rounded-full"
                     style={{
-                      width: `${
-                        (item.views /
+                      width: `${(item.views /
                           Math.max(...viewsData.map((d) => d.views), 1)) *
                         100
-                      }%`,
+                        }%`,
                     }}
                   ></div>
                 </div>
@@ -123,21 +121,6 @@ const AdminAnalytics: React.FC = () => {
         </div>
       </div>
 
-      {/* Visitor Trends */}
-      <div className="bg-white rounded-lg shadow p-6 mt-8">
-        <h2 className="text-lg font-semibold mb-4">Visitor Trends</h2>
-        <div className="space-y-2">
-          {visitorTrends.map((trend) => (
-            <div
-              key={trend.week_start}
-              className="flex justify-between text-sm"
-            >
-              <span>{trend.week_start}</span>
-              <span>{trend.total_visitors} visitors</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
